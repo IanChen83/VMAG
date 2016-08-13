@@ -15,8 +15,6 @@ CostTable cost[MCS_LEVEL];
 UserTable user = {0};
 UserViewTable userView = {0};
 
-#define ForEachLevel(i) for(int (i) = 0; (i) < MCS_LEVEL; ++ (i))
-#define ForEachView(i) for(int (i) = 0; (i) < MCS_VIEW; ++ (i))
 /******************************************************************************
  *                               Print Method                                 *
  *****************************************************************************/
@@ -39,7 +37,7 @@ void printUser(UserTable u){
 }
 
 void printRange(RangeIndicator& ri){
-    for(int i = 0; i < MCS_LEVEL; ++i){
+    ForEachLevel(i){
         cout << i << " : ";
         For(ri.begin(i), ri.end(i), it){
             printf("[%d %d] ", it->first, it->second);
@@ -143,8 +141,8 @@ int _next_one_distance(const int level, const int view){
 
 void InitializationPhase(){
     // 1. Vertical Propagation
-    For(0, MCS_VIEW, i){
-        For(0, MCS_LEVEL, j){
+    ForEachView(i){
+        ForEachLevel(j){
             if(user[j][i] != 0){
                 For(j, MCS_LEVEL, k)
                     user[k][i] |= 1;
@@ -155,8 +153,8 @@ void InitializationPhase(){
 
     // 2.Horizontal Propagation
     int temp = 0;
-    For(0, MCS_LEVEL, i){
-        For(0, MCS_VIEW, j){
+    ForEachLevel(i){
+        ForEachView(j){
             if(user[i][j] == 1){
                 if((temp = _next_one_distance(i, j)) <= R){
                     For(1, temp, k){
@@ -171,9 +169,9 @@ void InitializationPhase(){
     // 3. Mark Ranges
     bool s = false;
     int begin = 0, end = 0;
-    For(0, MCS_LEVEL, i){
+    ForEachLevel(i){
         s = false;
-        For(0, MCS_VIEW, j){
+        ForEachView(j){
             if(!s){
                 if(user[i][j] == 1){
                     s = true;
@@ -195,10 +193,8 @@ void InitializationPhase(){
 }
 /*
  * 'No Aggregation' sub-algorithm:
- *      Caculate cost[h:i, j:t]
  * */
 void NAggregation(const int l, const Range& range){    // range, level
-    // TODO: API change
 /*    int m = INT_MAX, temp;
     CostBlock* block;
     for(int k = (j - R >= range.first) ? (j - R): range.first; k < j; ++k){

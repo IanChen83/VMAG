@@ -53,8 +53,11 @@ typedef CostBlock CostTable[MCS_VIEW][MCS_VIEW];
 
 #define For(begin, end, it) for(auto (it) = (begin); (it) != (end); ++(it))
 
+#define ForEachLevel(i) For(0, MCS_LEVEL, (i))
+#define ForEachView(i) For(0, MCS_VIEW, (i))
+
 void initializeCostTable(CostTable& ct, const ResourceBlockTable& rbt,  const int level){
-    For(0, MCS_VIEW, i){
+    ForEachView(i){
         ct[i][i].cost = rbt[level][i];
     }
 }
