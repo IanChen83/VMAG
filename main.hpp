@@ -22,8 +22,9 @@
      maximum length.
 
   3. Cost Table
-     For back tracking purpose, Cost Table store cost resource block
-     as well as last selected view. CT(level, view).
+     For back tracking purpose, Cost Table store cost for transmitting
+     view i to view j as well as previous selected view.
+     Cost[i][j]
 
   4. User Table
      Storing the number of user in each view.
@@ -151,7 +152,7 @@ class RangeIndicator{
             }
             return std::make_pair(a, b);
         }
-        RangeIterPair getConveredRanges(const int level, const Range& range){
+        RangeIterPair getCoveredRanges(const int level, const Range& range){
             return getCoveredRanges(level, range.first, range.second);
         }
 
@@ -181,6 +182,11 @@ void expandRange(Range& x, int r){
     assert(r >= 0);
     x.first = (x.first - r > 0) ? x.first - r : 0;
     x.second = (x.second + r < MCS_VIEW) ? x.second + r : MCS_VIEW - 1;
+}
+Range expandRangeDup(const Range& x, int r){
+    auto y = x;
+    expandRange(y, r);
+    return y;
 }
 
 #endif  // MAIN_HEADER

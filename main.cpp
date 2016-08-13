@@ -11,7 +11,7 @@ using namespace std;
 
 ResourceBlockTable RBT = {0};
 RangeIndicator RI;
-CostTable cost;
+CostTable cost[MCS_LEVEL];
 UserTable user = {0};
 UserViewTable userView = {0};
 
@@ -169,13 +169,37 @@ void InitializationPhase(){
     }
 
     // 3. Mark Ranges
+    bool s = false;
+    int begin = 0, end = 0;
+    For(0, MCS_LEVEL, i){
+        s = false;
+        For(0, MCS_VIEW, j){
+            if(!s){
+                if(user[i][j] == 1){
+                    s = true;
+                    begin = j;
+                }
+            }else{
+                if(user[i][j] == 0){
+                    s = false;
+                    end = j;
+                    RI.addRange(i, begin, end - 1);
+                }
+            }
+        }
+        if(s){
+            RI.addRange(i, begin, MCS_VIEW - 1);
+            s = false;
+        }
+    }
 }
 /*
- * 'No Aggregation' sub-algorithm
+ * 'No Aggregation' sub-algorithm:
+ *      Caculate cost[h:i, j:t]
  * */
-void NAggregation(const Range& range, const int l, const int j){    // range, level, view
+void NAggregation(const int l, const Range& range){    // range, level
     // TODO: API change
-    int m = INT_MAX, temp;
+/*    int m = INT_MAX, temp;
     CostBlock* block;
     for(int k = (j - R >= range.first) ? (j - R): range.first; k < j; ++k){
         if((temp = min(m, RBT[l][j] + cost[l][k].cost + QOE(k, j) )) != m){
@@ -185,18 +209,19 @@ void NAggregation(const Range& range, const int l, const int j){    // range, le
     }
     cost[l][j].cost = m;
     cost[l][j].prev = block;
+*/
 }
 
 /*
  * 'Vertical Aggregation' sub-algorithm
  * */
-void VAggregation(const Range& range1, const Range& range2, const int level, const int view){
+void VAggregation(const int level, const Range& range1, RangeIter& begin, RangeIter& end){
 }
 
 /*
  * 'Vertical and Horizontal Aggregation' sub-algorithm
  * */
-void VHAggregation(const RangeIter& begin, const RangeIter& end, const int level, const int view){
+void VHAggregation(const int level,const Range& range, const Range& range1, const Range& range2){
 }
 
 
@@ -207,9 +232,22 @@ void VMAG(){
 
     InitializationPhase();
 
-    For(0, MCS_VIEW, i){
-        auto begin = RI.begin(i), end = RI.end(i);
-        For(begin, end, it){
+    ForAllRange(RI.get(0), it){
+        NAggregation(0, *it);
+    }
+
+    For(1, MCS_LEVEL, i){
+        ForAllRange(RI.get(i), it){
+            NAggregation(i, *it);
+
+            auto covered = RI.getCoveredRanges(i - 1, *it);
+            VAggregation(i, *it, covered.first, covered.second);
+
+            for(auto cit = covered.first; cit != covered.second; ++cit){
+                if(isOverlapped(*cit, *(cit+1))){
+                    VHAggregation(i, *it, *cit, *(cit+1));
+                }
+            }
         }
     }
 
