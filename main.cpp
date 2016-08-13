@@ -241,6 +241,7 @@ void NAggregation(const int l, const Range& lower, const Range& upper){
  *
  * */
 void VAggregation(const int l, const Range& range1, const Range& begin, const Range& end){
+    assert(l > 0);
     int temp = INT_MAX, m = temp;
     CostBlock* prev = NULL;
 
@@ -248,7 +249,7 @@ void VAggregation(const int l, const Range& range1, const Range& begin, const Ra
         For(end.first, end.second + 1, j){
             temp = INT_MAX;
             For(begin.first, begin.second + 1, i){
-                if((temp = min(cost[l-1][i][j].cost + cost[l][h][i].cost - rbt[l][i],m)) != m){
+                if((temp = min(cost[l-1][i][j].cost + cost[l][h][i].cost - RBT[l][i],m)) != m){
                     m = temp;
                     prev = &(cost[l][h][i]);
                 }
@@ -280,17 +281,24 @@ void VMAG(){
         NAggregation(0, Range(x.first, it->first), Range(it->second, x.second));
     }
 
+    // TODO: Procedure not right
     For(1, MCS_LEVEL, i){
         ForAllRange(RI.get(i), it){
             auto x = expandRangeDup(*it, R);
             NAggregation(0, Range(x.first, it->first), Range(it->second, x.second));
 
             auto covered = RI.getCoveredRanges(i - 1, *it);
-            VAggregation(i, *it, covered.first, covered.second);
+            For(covered.first, covered.second, cit){
+                auto cx = expandRangeDup(*cit, R);
+                VAggregation(i, Range(x.first, it->first), Range(cx.first, cit->first),
+                        Range(cit->second, cx.second));
+
+                NAggregation(i, Range(x.first, it->first), Range(cit->second, it->second));
+            }
 
             for(auto cit = covered.first; cit != covered.second; ++cit){
                 if(isOverlapped(*cit, *(cit+1))){
-                    VHAggregation(i, *it, *cit, *(cit+1));
+                    // Call VHAggregation
                 }
             }
         }
