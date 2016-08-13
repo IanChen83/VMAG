@@ -117,14 +117,6 @@ bool parseUser(const string rangePath){
 /******************************************************************************
  *                              Algorithm Method                              *
  *****************************************************************************/
-/*
- * Return QoE factor, assuming 0 <= k < j < MCS_VIEW
- * */
-int QOE(const int k, const int j){
-    if(j < k+2)
-        return 0;
-    return ALPHA * (j - k) * accumulate(&userView[k+1], &userView[j-1], 0);
-}
 
 /*
  * 'Initialization Phase' sub-algorithm
@@ -191,31 +183,86 @@ void InitializationPhase(){
         }
     }
 }
+
 /*
- * 'No Aggregation' sub-algorithm:
+ * Return QoE factor, assuming 0 <= k < j < MCS_VIEW
  * */
-void NAggregation(const int l, const Range& range){    // range, level
-/*    int m = INT_MAX, temp;
-    CostBlock* block;
-    for(int k = (j - R >= range.first) ? (j - R): range.first; k < j; ++k){
-        if((temp = min(m, RBT[l][j] + cost[l][k].cost + QOE(k, j) )) != m){
-            m = temp;
-            block = &(cost[l][k]);
+int QOE(const int k, const int j){
+    if(j < k+2)
+        return 0;
+    return ALPHA * (j - k) * accumulate(&userView[k+1], &userView[j-1], 0);
+}
+
+/*
+ * 'No Aggregation' sub-algorithm (formula 1)
+ *
+ *                      h  i               j  t
+ *                      ***|||||||||||||||||***
+ *
+ * Calling NAggregation(level, [h:i], [j:t]) needs cost[level][x][x] pre-defined for
+ * x in range [h:i]
+ *
+ * */
+void NAggregation(const int l, const Range& lower, const Range& upper){
+    int temp = INT_MAX, m = temp;
+    CostBlock* prev = NULL;
+
+    For(lower.first, lower.second + 1, i){
+        For(i, upper.second + 1, j){
+            temp = INT_MAX;
+            For(max(j - R, upper.first), j, k){
+                if((temp = min(cost[l][i][k].cost + RBT[l][j] + QOE(k, j), m)) != m){
+                    m = temp;
+                    prev = &(cost[l][i][k]);
+                }
+            }
+            if(m < cost[l][i][j].cost){
+                cost[l][i][j].cost = m;
+                cost[l][i][j].prev = prev;
+            }
         }
     }
-    cost[l][j].cost = m;
-    cost[l][j].prev = block;
-*/
 }
 
 /*
- * 'Vertical Aggregation' sub-algorithm
+ * 'Vertical Aggregation' sub-algorithm (formula 2)
+ *
+ *                      m  u       v  n
+ *                      ***|||||||||***
+ *                  h  i                  j  t
+ *                  ***||||||||||||||||||||***
+ *
+ * 'Vertical Aggregation' is specified by 3 ranges, [h:i], [m:u], and [v:n]
+ * Calling VAggregation(level, [h:i], [m:u], [v:n]) needs cost[level-1][m:u][v:n]
+ * pre-defined and cost[level][h:i][m:u] pre-defined
+ *
+ * Note that calling NAggregation(level, [h:i], [v:t]) would be necessary (explained in
+ * formula 3)
+ *
  * */
-void VAggregation(const int level, const Range& range1, RangeIter& begin, RangeIter& end){
+void VAggregation(const int l, const Range& range1, const Range& begin, const Range& end){
+    int temp = INT_MAX, m = temp;
+    CostBlock* prev = NULL;
+
+    For(range1.first, range1.second + 1, h){
+        For(end.first, end.second + 1, j){
+            temp = INT_MAX;
+            For(begin.first, begin.second + 1, i){
+                if((temp = min(cost[l-1][i][j].cost + cost[l][h][i].cost - rbt[l][i],m)) != m){
+                    m = temp;
+                    prev = &(cost[l][h][i]);
+                }
+            }
+            if(m < cost[l][h][j].cost){
+                cost[l][h][j].cost = m;
+                cost[l][h][j].prev = prev;
+            }
+        }
+    }
 }
 
 /*
- * 'Vertical and Horizontal Aggregation' sub-algorithm
+ * 'Vertical and Horizontal Aggregation' sub-algorithm (formula 4)
  * */
 void VHAggregation(const int level,const Range& range, const Range& range1, const Range& range2){
 }
@@ -229,12 +276,14 @@ void VMAG(){
     InitializationPhase();
 
     ForAllRange(RI.get(0), it){
-        NAggregation(0, *it);
+        auto x = expandRangeDup(*it, R);
+        NAggregation(0, Range(x.first, it->first), Range(it->second, x.second));
     }
 
     For(1, MCS_LEVEL, i){
         ForAllRange(RI.get(i), it){
-            NAggregation(i, *it);
+            auto x = expandRangeDup(*it, R);
+            NAggregation(0, Range(x.first, it->first), Range(it->second, x.second));
 
             auto covered = RI.getCoveredRanges(i - 1, *it);
             VAggregation(i, *it, covered.first, covered.second);

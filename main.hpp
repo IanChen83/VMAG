@@ -5,6 +5,7 @@
 #include <array>
 #include <algorithm>
 #include <utility>
+#include <climits>
 #include <cassert>
 
 /********************************************************************
@@ -42,7 +43,7 @@ typedef int UserViewTable[MCS_VIEW];
 
 struct CostBlock{
     CostBlock(){
-        cost = 0;
+        cost = INT_MAX;
         prev = this;
     }
     int         cost;
@@ -52,6 +53,7 @@ struct CostBlock{
 typedef CostBlock CostTable[MCS_VIEW][MCS_VIEW];
 
 #define For(begin, end, it) for(auto (it) = (begin); (it) != (end); ++(it))
+#define ForRev(end, begin, it) for(auto (it) = (end); (it) != (begin), --(it))
 
 #define ForEachLevel(i) For(0, MCS_LEVEL, (i))
 #define ForEachView(i) For(0, MCS_VIEW, (i))
