@@ -1,5 +1,7 @@
 # Created by https://www.gitignore.io/api/c++
 
+For_Patrick
+
 ### C++ ###
 # Prerequisites
 *.d
@@ -33,5 +35,6 @@
 *.exe
 *.out
 *.app
+main
 
 *.swp

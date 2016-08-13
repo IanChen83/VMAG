@@ -13,7 +13,7 @@
   1. Resource Block Table
      A 2D array denoted RBT(level, view) that storing the cost to
      transmit each view in which
-        level   : The number of MCS level, 0 denotes the most costy
+        level   : The number of MCS level, 0 denotes the least costy
                   one.
         view    : Slot number
 
@@ -21,26 +21,51 @@
      Each range store the information of consecutive views with the
      maximum length.
 
+  3. Cost Table
+     For back tracking purpose, Cost Table store cost resource block
+     as well as last selected view. CT(level, view).
+
+  4. User Table
+     Storing the number of user in each view.
+
  *******************************************************************/
 
-#define MCS_LEVEL   16
+#define MCS_LEVEL   15
 #define MCS_VIEW    16
+#define R           3
+#define ALPHA       1
+
+typedef int ResourceBlockTable[MCS_LEVEL][MCS_VIEW];
+typedef int UserTable[MCS_LEVEL][MCS_VIEW];
+typedef int UserViewTable[MCS_VIEW];
+
+struct CostBlock{
+    CostBlock(){
+        cost = 0;
+        prev = this;
+    }
+    int         cost;
+    CostBlock*  prev;
+};
+
+typedef CostBlock CostTable[MCS_VIEW][MCS_VIEW];
+
+#define For(begin, end, it) for(auto (it) = (begin); (it) != (end); ++(it))
+
+void initializeCostTable(CostTable& ct, const ResourceBlockTable& rbt,  const int level){
+    For(0, MCS_VIEW, i){
+        ct[i][i].cost = rbt[level][i];
+    }
+}
 
 typedef std::pair<int, int>                 Range;
 typedef std::vector<Range>::iterator        RangeIter;
 typedef std::vector<Range>::const_iterator  ConstRangeIter;
 typedef std::pair<RangeIter, RangeIter>     RangeIterPair;
 
-#define ForAllRange(v, it) for(auto (it) = (v).begin(); (it) != (v).end(); ++(it))
-#define ForAllLevel(a, it) for(auto (it) = (a).begin(); (it) != (a).end(); ++(it))
-#define ForEachRange(begin, end, it) for(auto (it) = (begin); (it) != (end); ++(it))
-#define ForEachLevel(begin, end, it) for(auto (it) = (begin); (it) != (end); ++(it))
+typedef std::pair<int, int>                 LVPair;
 
-struct ResourceBlockTable: std::array<int, MCS_LEVEL * MCS_VIEW>{
-    int& operator()(const int a, const int b){
-        return at(a * b);
-    }
-};
+#define ForAllRange(v, it) for(auto (it) = (v).begin(); (it) != (v).end(); ++(it))
 
 class RangeIndicator{
     public:
@@ -96,8 +121,10 @@ class RangeIndicator{
         /*
          * Return iterator by specifying level number
          * */
-        RangeIter getIteratorBegin(const int level){ return views[level].begin(); }
-        RangeIter getIteratorEnd(const int level){ return views[level]. end();}
+        RangeIter begin(const int level){ return views[level].begin(); }
+        RangeIter end(const int level){ return views[level].end(); }
+
+        std::vector<Range>& get(const int level){ return views[level]; }
 
         /*
          * Return a pair of range iterator which are the first and the end of elements
@@ -123,6 +150,9 @@ class RangeIndicator{
                 }
             }
             return std::make_pair(a, b);
+        }
+        RangeIterPair getConveredRanges(const int level, const Range& range){
+            return getCoveredRanges(level, range.first, range.second);
         }
 
     private:
@@ -152,9 +182,5 @@ void expandRange(Range& x, int r){
     x.first = (x.first - r > 0) ? x.first - r : 0;
     x.second = (x.second + r < MCS_VIEW) ? x.second + r : MCS_VIEW - 1;
 }
-
-ResourceBlockTable RBT;
-RangeIndicator RI;
-
 
 #endif  // MAIN_HEADER
