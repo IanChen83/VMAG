@@ -75,7 +75,8 @@ bool parseRBT(const string rbtPath){
     }
 
     if(count != MCS_LEVEL * MCS_VIEW){
-        printf("Warning: Expect %d lines, only %d lines read\n", MCS_LEVEL * MCS_VIEW, count);
+        printf("Warning: Expect %d lines, only %d lines read\n",
+                MCS_LEVEL * MCS_VIEW, count);
     }
 
     is.close();
@@ -233,8 +234,8 @@ void NAggregation(const int l, const Range& lower, const Range& upper){
  *                  ***||||||||||||||||||||***
  *
  * 'Vertical Aggregation' is specified by 3 ranges, [h:i], [m:u], and [v:n]
- * Calling VAggregation(level, [h:i], [m:u], [v:n]) needs cost[level-1][m:u][v:n]
- * pre-defined and cost[level][h:i][m:u] pre-defined
+ * Calling VAggregation(level, [h:i], [m:u], [v:n]) requires cost[level-1][m:u][v:n]
+ * and cost[level][h:i][m:u] pre-calculated
  *
  * Note that calling NAggregation(level, [h:i], [v:t]) would be necessary (explained in
  * formula 3)
@@ -249,7 +250,8 @@ void VAggregation(const int l, const Range& range1, const Range& begin, const Ra
         For(end.first, end.second + 1, j){
             temp = INT_MAX;
             For(begin.first, begin.second + 1, i){
-                if((temp = min(cost[l-1][i][j].cost + cost[l][h][i].cost - RBT[l][i],m)) != m){
+                if((temp = min(cost[l-1][i][j].cost + cost[l][h][i].cost - RBT[l][i],m))
+                        != m){
                     m = temp;
                     prev = &(cost[l][h][i]);
                 }
@@ -264,8 +266,41 @@ void VAggregation(const int l, const Range& range1, const Range& begin, const Ra
 
 /*
  * 'Vertical and Horizontal Aggregation' sub-algorithm (formula 4)
+ *
+ *                                   f  ab  g
+ *                                   ***||***
+ *                      m  u       v  n
+ *                      ***|||||||||***
+ *                  h  i                  j  t
+ *                  ***||||||||||||||||||||***
+ *
+ * 'Vertical and Horizontal Aggregation' is specified by 3 ranges, [h:i], [f:n], and [b:g]
+ * Calling VHAggregation(level, [h:i], [f:n], [b:g]) requires cost[l-1][m:u][f:n] and
+ * cost[l-1][f:a][b:g] pre-calculated
+ *
+ * Note that calling VHA may not produce optimal result, and calling VA and NA is still
+ * needed (explained is formula 4)
  * */
-void VHAggregation(const int level,const Range& range, const Range& range1, const Range& range2){
+void VHAggregation(const int level,const Range& begin, const Range& mid, const Range& end){
+    assert(l > 0);
+    int temp = INT_MAX, m = temp;
+    ContBlock* prev = NULL;
+
+    For(begin.first, begin.second + 1, h){
+        For(end.first, end.second + 1, j){
+            temp = INT_MAX;
+            For(mid.first, mid.second + 1, o){
+                if((temp = min(cost[l][h][o] + cost[l-1][o][j] - rbt[l][o])) != m){
+                    m = temp;
+                    prev = &(const[l][h][o]);
+                }
+            }
+            if(m < const[l][h][j].cost){
+                cost[l][h][j].cost = m;
+                cost[l][h][j].prev = prev;
+            }
+        }
+    }
 }
 
 

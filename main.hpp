@@ -98,7 +98,8 @@ class RangeIndicator{
          * */
         void deleteRange(const int level, const int lower, const int upper){
             views[level].erase(
-                    std::remove_if(views[level].begin(), views[level].end(),[lower, upper](const Range& x){
+                    std::remove_if(views[level].begin(), views[level].end(),
+                        [lower, upper](const Range& x){
                         return (x.first == lower && x.second == upper);
                         })
                     );
@@ -116,7 +117,8 @@ class RangeIndicator{
         }
 
         void sort(const int level){
-            std::sort(views[level].begin(), views[level].end(), [](Range& a, Range& b){ return a.first < b.first; });
+            std::sort(views[level].begin(), views[level].end(),
+                    [](Range& a, Range& b){ return a.first < b.first; });
         }
 
         void sortAll(){
@@ -135,7 +137,8 @@ class RangeIndicator{
         /*
          * Return a pair of range iterator which are the first and the end of elements
          * that is covered in their level
-         * Return end(), which can be accessed by calling getIteratorEnd(), if nothing is covered
+         * Return end(), which can be accessed by calling getIteratorEnd(), if nothing is
+         * covered
          * */
         RangeIterPair getCoveredRanges(const int level, const int lower, const int upper){
             bool s = true;
