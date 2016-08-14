@@ -281,21 +281,21 @@ void VAggregation(const int l, const Range& range1, const Range& begin, const Ra
  * Note that calling VHA may not produce optimal result, and calling VA and NA is still
  * needed (explained is formula 4)
  * */
-void VHAggregation(const int level,const Range& begin, const Range& mid, const Range& end){
+void VHAggregation(const int l,const Range& begin, const Range& mid, const Range& end){
     assert(l > 0);
     int temp = INT_MAX, m = temp;
-    ContBlock* prev = NULL;
+    CostBlock* prev = NULL;
 
     For(begin.first, begin.second + 1, h){
         For(end.first, end.second + 1, j){
             temp = INT_MAX;
             For(mid.first, mid.second + 1, o){
-                if((temp = min(cost[l][h][o] + cost[l-1][o][j] - rbt[l][o])) != m){
+                if((temp = min(cost[l][h][o].cost + cost[l-1][o][j].cost - RBT[l][o], m)) != m){
                     m = temp;
-                    prev = &(const[l][h][o]);
+                    prev = &(cost[l][h][o]);
                 }
             }
-            if(m < const[l][h][j].cost){
+            if(m < cost[l][h][j].cost){
                 cost[l][h][j].cost = m;
                 cost[l][h][j].prev = prev;
             }
