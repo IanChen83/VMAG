@@ -1,5 +1,5 @@
-#ifndef MAIN_HEADER
-#define MAIN_HEADER
+#ifndef VMAG_DS_HEADER
+#define VMAG_DS_HEADER
 
 #include <vector>
 #include <array>
@@ -32,7 +32,7 @@
 
  *******************************************************************/
 
-#define MCS_LEVEL   15
+#define MCS_LEVEL   3
 #define MCS_VIEW    16
 #define R           3
 #define ALPHA       1
@@ -58,11 +58,6 @@ typedef CostBlock CostTable[MCS_VIEW][MCS_VIEW];
 #define ForEachLevel(i) For(0, MCS_LEVEL, (i))
 #define ForEachView(i) For(0, MCS_VIEW, (i))
 
-void initializeCostTable(CostTable& ct, const ResourceBlockTable& rbt,  const int level){
-    ForEachView(i){
-        ct[i][i].cost = rbt[level][i];
-    }
-}
 
 typedef std::pair<int, int>                 Range;
 typedef std::vector<Range>::iterator        RangeIter;
@@ -137,7 +132,7 @@ class RangeIndicator{
         /*
          * Return a pair of range iterator which are the first and the end of elements
          * that is covered in their level
-         * Return end(), which can be accessed by calling getIteratorEnd(), if nothing is
+         * Return end(), which can be accessed by calling end(int level), if nothing is
          * covered
          * */
         RangeIterPair getCoveredRanges(const int level, const int lower, const int upper){
@@ -158,10 +153,14 @@ class RangeIndicator{
                     }
                 }
             }
+            b = (b == views[level].end())? views[level].end(): b + 1;
             return std::make_pair(a, b);
         }
         RangeIterPair getCoveredRanges(const int level, const Range& range){
             return getCoveredRanges(level, range.first, range.second);
+        }
+        bool isNullRangeIter(RangeIterPair& pair){
+            return pair.first == pair.second;
         }
 
     private:
@@ -172,29 +171,17 @@ class RangeIndicator{
 /*
  * Return true if a is overlapped with b
  * */
-bool isOverlapped(const Range& a, const Range& b){
-    return !((a.second < b.first) || (b.second < a.first));
-}
+bool isOverlapped(const Range&, const Range&);
 
 /*
  * Return true if a covers b
  * */
-bool isCovered(const Range& a, const Range& b){
-    return (a.first <= b.first && a.second >= b.second);
-}
+bool isCovered(const Range&, const Range&);
 
 /*
  * Expand the range, boundary-safe
  * */
-void expandRange(Range& x, int r){
-    assert(r >= 0);
-    x.first = (x.first - r > 0) ? x.first - r : 0;
-    x.second = (x.second + r < MCS_VIEW) ? x.second + r : MCS_VIEW - 1;
-}
-Range expandRangeDup(const Range& x, int r){
-    auto y = x;
-    expandRange(y, r);
-    return y;
-}
+void expandRange(Range&, int);
+Range expandRangeDup(const Range&, int);
 
 #endif  // MAIN_HEADER

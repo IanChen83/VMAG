@@ -2,9 +2,9 @@
 CXX		:= g++
 PROG	:= main
 
-CPPFLAG	+= -O2 -std=c++11 -g
+CPPFLAG	+= -std=c++11 -g
 
-SRC		:= main.cpp
+SRC		:= main.cpp vmag.cpp vmag_ds.cpp
 
 all: $(PROG)
 default: $(PROG)
@@ -17,7 +17,7 @@ $(PROG): $(OBJ)
 	g++ $^ -o $@
 
 %.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CPPFLAG) $< -o $@
 
 clean:
 	rm -rf $(PROG) $(OBJ)
