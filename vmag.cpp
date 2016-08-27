@@ -24,9 +24,15 @@ void printRBT(ResourceBlockTable& rbt){
 }
 
 void printUser(UserTable u){
+    cout << setw(2) << 'x';
+    ForEachView(i){
+        cout << setw(3) << i;
+    }
+    cout << endl;
     ForEachLevel(i){
+        cout << setw(2) << i;
         ForEachView(j){
-            cout << (u[i][j]) << ' ';
+            cout <<setw(3) << (u[i][j]);
         }
         cout << endl;
     }
@@ -35,8 +41,8 @@ void printUser(UserTable u){
 void printRange(RangeIndicator& ri){
     ForEachLevel(i){
         cout << i << " : ";
-        For(ri.begin(i), ri.end(i), it){
-            printf("[%d %d] ", it->first, it->second);
+        for(auto& it: ri.get(i)){
+            printf("[%d %d] ", it.first, it.second);
         }
         cout << endl;
     }
@@ -44,9 +50,15 @@ void printRange(RangeIndicator& ri){
 
 void printCost(CostTable ct[]){
     ForEachLevel(l){
+        cout << "-------------------- LEVEL " << l << "--------------------" << endl;
+        cout << setw(2) << 'x';
         ForEachView(i){
+            cout << setw(5) << i;
+        }
+        cout << endl;
+        ForEachView(i){
+            cout << setw(2) << i;
             ForEachView(j){
-
                 if(ct[l][i][j].cost == INT_MAX)
                     cout << setw(5) << "MAX";
                 else
@@ -55,16 +67,46 @@ void printCost(CostTable ct[]){
             cout << endl;
         }
 
-        cout << "---------------------------------------------------------------------\n";
+        cout << "-----------------------------------------------" << endl;
     }
 
+    cout << "-------------------- VIRTUAL --------------------" << endl;
+    cout << setw(2) << 'x';
+    ForEachView(i){
+        cout << setw(5) << i;
+    }
+    cout << endl;
+    ForEachView(i){
+        cout << setw(2) << i;
+        ForEachView(j){
+            if(ct[MCS_LEVEL][i][j].cost == INT_MAX)
+                cout << setw(5) << "MAX";
+            else
+                cout << setw(5) << ct[MCS_LEVEL][i][j].cost;
+        }
+        cout << endl;
+    }
+
+    cout << "-----------------------------------------------" << endl;
+
+
     cout << setw(0);
+}
+
+void printCostTrace(CostTable ct[], int level, int from, int to){
+    auto trace = getCostTrace(ct, level, from, to);
+    for(auto t: trace){
+        if(t.second == MCS_LEVEL) continue;
+        cout << '(' << t.first << ',' << t.second << ')' << ' ';
+    }
+    cout << endl;
 }
 
 ostream& operator<<(ostream& os,const Range& range){
     os << '[' << range.first << ':' << range.second << ']';
     return os;
 }
+
 /******************************************************************************
  *                               Parse Method                                 *
  *****************************************************************************/
@@ -100,6 +142,10 @@ bool parseRBT(const string rbtPath){
     }
 
     is.close();
+
+    ForEachView(i){
+        RBT[MCS_LEVEL][i] = 0;
+    }
     return true;
 }
 
@@ -150,6 +196,14 @@ int _next_one_distance(const int level, const int view){
             return i - view;
     }
     return MCS_VIEW;
+}
+
+unsigned getLevelNumber(CostBlock* cb){
+    return (cb-(CostBlock*)cost)/MCS_VIEW;
+}
+
+unsigned getViewNumber(CostBlock* cb){
+
 }
 
 void InitializationPhase(){
@@ -203,12 +257,25 @@ void InitializationPhase(){
             s = false;
         }
     }
+    // Virtual level
+    RI.addRange(MCS_LEVEL, 0, MCS_VIEW - 1);
 
     //4. CostTable initialization
-    ForEachLevel(l){
-        ForEachView(i){
-            cost[l][i][i].cost = RBT[l][i];
+    ForEachView(i){
+        int top = -1;
+        ForEachLevel(l){
+            if(top == -1){
+                cost[l][i][i].cost = RBT[l][i];
+                if(user[l][i] == 1){
+// TODO                    top = RBT[l][i];
+                }
+            }else{
+                cost[l][i][i].cost = top;
+            }
         }
+    }
+    ForEachView(i){
+        cost[MCS_LEVEL][i][i].cost = 0;
     }
 }
 
@@ -231,24 +298,25 @@ int QOE(const int k, const int j){
  * x in range [h:i]
  *
  * */
-void NAggregation(const int l, const Range& lower, const Range& upper){
-    cout << "Run NoAggregation(" << l << ", " << lower << ", " << upper << ")\n";
+void NAggregation(const int l, const Range& lower, const Range& upper, int start = -1){
     int temp, m;
-    CostBlock* prev = NULL;
+    int prev = -1;
 
     For(lower.first, lower.second + 1, i){
         For(i, upper.second + 1, j){
             temp = m = INT_MAX;
             For(max(j - R, i), j, k){
+                if(k < start) continue;
                 assert(cost[l][i][k].cost != INT_MAX);
-                if((temp = min(cost[l][i][k].cost + RBT[l][j] + QOE(k, j), m)) != m){
+                if((temp = min(cost[l][i][k].cost + RBT[l][j]/* + QOE(k, j)*/, m)) != m){
                     m = temp;
-                    prev = &(cost[l][i][k]);
+                    prev = k;
                 }
             }
             if(m < cost[l][i][j].cost){
                 cost[l][i][j].cost = m;
                 cost[l][i][j].prev = prev;
+                cost[l][i][j].method = 'N';
             }
         }
     }
@@ -271,36 +339,47 @@ void NAggregation(const int l, const Range& lower, const Range& upper){
  *
  * */
 void VAggregation(const int l, const Range& range1, const Range& begin, const Range& end){
-    cout << "Run VAggregation(" << l << ", " << range1 << ", " << begin << ", " << end << ")\n";
     assert(l > 0);
     int temp, m;
-    CostBlock* prev = NULL;
+    int prev = -1;
+
 
     For(range1.first, range1.second + 1, h){
         For(end.first, end.second + 1, j){
             temp = m = INT_MAX;
-            For(begin.first, begin.second + 1, i){
+            For(max(h, begin.first), begin.second + 1, i){
                 assert(cost[l-1][i][j].cost != INT_MAX);
                 assert(cost[l][h][i].cost != INT_MAX);
                 if((temp = min(cost[l-1][i][j].cost + cost[l][h][i].cost - RBT[l][i], m))
                         != m){
                     m = temp;
-                    prev = &(cost[l][h][i]);
+                    prev = i;
                 }
             }
             if(m < cost[l][h][j].cost){
                 cost[l][h][j].cost = m;
                 cost[l][h][j].prev = prev;
+                cost[l][h][j].method = 'V';
             }
         }
     }
+    /*
+     * Before return, cost[l][h:i][u] should be update to use cost[l-1][h:i][u]
+     * We make an assumption that every path from [h:i] to u only use one view in [m:u] in l-1 level,
+     * because it can be transmitted in l level and reduce resource blocks
+     * */
+    For(range1.first, range1.second + 1, h){
+        cost[l][h][begin.second].cost = cost[l][h][begin.second].cost - cost[l][begin.second][begin.second].cost
+            + cost[l-1][begin.second][begin.second].cost;
+    }
+
 }
 
 /*
  * 'Vertical and Horizontal Aggregation' sub-algorithm (formula 4)
  *
- *                                   f  ab  g
- *                                   ***||***
+ *                                   f  a  b  g
+ *                                   ***||||***
  *                      m  u       v  n
  *                      ***|||||||||***
  *                  h  i                  j  t
@@ -314,10 +393,9 @@ void VAggregation(const int l, const Range& range1, const Range& begin, const Ra
  * needed (explained is formula 4)
  * */
 void VHAggregation(const int l,const Range& begin, const Range& mid, const Range& end){
-    cout << "Run VAggregation(" << l << ", " << begin << ", " << mid << ", " << end << ")\n";
     assert(l > 0);
     int temp, m;
-    CostBlock* prev = NULL;
+    int prev = -1;
 
     For(begin.first, begin.second + 1, h){
         For(end.first, end.second + 1, j){
@@ -325,19 +403,24 @@ void VHAggregation(const int l,const Range& begin, const Range& mid, const Range
             For(mid.first, mid.second + 1, o){
                 assert(cost[l][h][o].cost != INT_MAX);
                 assert(cost[l-1][o][j].cost != INT_MAX);
-                if((temp = min(cost[l][h][o].cost + cost[l-1][o][j].cost - RBT[l][o], m)) != m){
+                if((temp = min(cost[l][h][cost[l][h][o].prev].cost + cost[l-1][o][j].cost, m)) != m){
+                    // Using the cost from its prev is equivalent to reducing the cost of itself
                     m = temp;
-                    prev = &(cost[l][h][o]);
+                    prev = o;
                 }
             }
             if(m < cost[l][h][j].cost){
                 cost[l][h][j].cost = m;
                 cost[l][h][j].prev = prev;
+                cost[l][h][j].method = 'C'; // combined
             }
         }
     }
 }
 
+void Finalize(){
+    printCostTrace(cost, MCS_LEVEL, 0, MCS_VIEW - 1);
+}
 
 /*
  * VMAG Algorithm
@@ -346,41 +429,47 @@ void VMAG(){
 
     InitializationPhase();
 
-    ForAllRange(RI.get(0), it){
-        auto x = expandRangeDup(*it, R);
-        NAggregation(0, Range(x.first, it->first), Range(it->second, x.second));
+    for(auto& it: RI.get(0)){
+        auto x = expandRangeDup(it, R-1);
+        NAggregation(0, Range(x.first, it.first), Range(it.second, x.second));
     }
 
-    For(1, MCS_LEVEL, i){
-        ForAllRange(RI.get(i), it){
-            auto x = expandRangeDup(*it, R);
+    For(1, MCS_LEVEL + 1, i){
+        for(auto& it: RI.get(i)){
+            auto x = expandRangeDup(it, R-1);
+            auto covered = RI.getCoverRanges(i - 1, it);
 
-            auto covered = RI.getCoveredRanges(i - 1, *it);
+            // With start number, we can safely call NA without referencing cost[l][h][h:start]
+            int start = -1;
 
-            if(RI.isNullRangeIter(covered)){
-                NAggregation(i, Range(x.first, it->first), Range(it->second, x.second));
+            if(covered.size() == 0){
+                // No VA, and VHA is NOT possible
+                NAggregation(i, Range(x.first, it.first), Range(it.second, x.second), start);
                 continue;
-            }
+            }else{
 
-            auto start = Range(x.first, it->first);
-
-            For(covered.first, covered.second, cit){
-                auto cx = expandRangeDup(*cit, R);
-                NAggregation(i, start, Range(cx.first, cit->first));
-                VAggregation(i, start, Range(cx.first, cit->first), Range(cit->second, cx.second));
-                start.first = cit->second;
-                start.second = cx.second;
-            }
-
-            NAggregation(i, start, Range(it->second, x.second));
-
-            for(auto cit = covered.first; cit != covered.second; ++cit){
-                if(isOverlapped(*cit, *(cit+1))){
-                    // Call VHAggregation
+                auto temp = NULL_RANGE;
+                for(auto& cit: covered){
+                    auto cx = expandRangeDup(cit, R-1);
+                    NAggregation(i, Range(x.first, it.first), Range(cx.first, cit.first), start);
+                    VAggregation(i, Range(x.first, it.first), Range(cx.first, cit.first), Range(cit.second, cx.second));
+                    if(temp != NULL_RANGE){
+                        auto over = getOverlapped(expandRangeDup(temp, R-1), expandRangeDup(cit, R-1));
+                        if(over != NULL_RANGE){
+                            VHAggregation(i, Range(x.first, it.first), over, Range(cit.second, cx.second));
+                        }
+                    }
+                    start = cit.second;
+                    temp = cit;
                 }
+
+                NAggregation(i, Range(x.first, it.first), Range(it.second, x.second), start);
             }
+
         }
     }
+
+    Finalize();
 
 }
 

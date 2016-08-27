@@ -2,11 +2,12 @@
 #define VMAG_DS_HEADER
 
 #include <vector>
-#include <array>
+#include <map>
 #include <algorithm>
 #include <utility>
 #include <climits>
 #include <cassert>
+#include <functional>
 
 /********************************************************************
  *                 Data structure of VMAG algorithm                 *
@@ -37,17 +38,19 @@
 #define R           3
 #define ALPHA       1
 
-typedef int ResourceBlockTable[MCS_LEVEL][MCS_VIEW];
+typedef int ResourceBlockTable[MCS_LEVEL + 1][MCS_VIEW];
 typedef int UserTable[MCS_LEVEL][MCS_VIEW];
 typedef int UserViewTable[MCS_VIEW];
 
 struct CostBlock{
     CostBlock(){
         cost = INT_MAX;
-        prev = this;
+        prev = -1;
+        method = '\0';
     }
     int         cost;
-    CostBlock*  prev;
+    int         prev;
+    char        method;
 };
 
 typedef CostBlock CostTable[MCS_VIEW][MCS_VIEW];
@@ -64,9 +67,38 @@ typedef std::vector<Range>::iterator        RangeIter;
 typedef std::vector<Range>::const_iterator  ConstRangeIter;
 typedef std::pair<RangeIter, RangeIter>     RangeIterPair;
 
-typedef std::pair<int, int>                 LVPair;
+typedef std::function<bool (Range&)>        RangeFilter;
+typedef std::function<Range (Range&)>      RangeTransform;
 
-#define ForAllRange(v, it) for(auto (it) = (v).begin(); (it) != (v).end(); ++(it))
+#define NULL_RANGE (Range(-1, -1))
+
+#define ForAllRange(v, it) for(auto& (it) : (v))
+
+/*
+ * Return true if a is overlapped with b
+ * */
+bool isOverlapped(const Range&, const Range&);
+
+/*
+ * Return true if a covers b
+ * */
+bool isCover(const Range&, const Range&);
+
+/*
+ * Expand the range, boundary-safe
+ * */
+void expandRange(Range&, int);
+Range expandRangeDup(const Range&, int);
+
+/*
+ * Get Overlapped range of a and b
+ * */
+Range getOverlapped(const Range& a, const Range& b);
+
+/*
+ * Return trace of costblock
+ * */
+std::map< int, int> getCostTrace(CostTable[], int, int, int);
 
 class RangeIndicator{
     public:
@@ -76,13 +108,13 @@ class RangeIndicator{
          *
          * */
         void addRange(const int level, const int lower, const int upper){
-            assert(level >= 0 && level < MCS_LEVEL);
+            assert(level >= 0 && level <= MCS_LEVEL);
             assert(lower >= 0 && lower < MCS_VIEW);
             assert(upper >= 0 && upper < MCS_VIEW);
-            assert(lower <= upper);
+            assert(lower < upper);
             assert(!isInRange(level, lower) && !isInRange(level, upper));
 
-            views[level].push_back(std::make_pair(lower, upper));
+            views[level].push_back(Range(lower, upper));
             sort(level);
         }
 
@@ -104,8 +136,8 @@ class RangeIndicator{
          * Specify a view position, return true if it falls into any range
          * */
         bool isInRange(const int& level, const int& view){
-            ForAllRange(views[level], it){
-                if(view >= it->first && view <= it->second)
+            for(auto& it: views[level]){
+                if(view >= it.first && view <= it.second)
                     return true;
             }
             return false;
@@ -127,61 +159,60 @@ class RangeIndicator{
         RangeIter begin(const int level){ return views[level].begin(); }
         RangeIter end(const int level){ return views[level].end(); }
 
-        std::vector<Range>& get(const int level){ return views[level]; }
-
-        /*
-         * Return a pair of range iterator which are the first and the end of elements
-         * that is covered in their level
-         * Return end(), which can be accessed by calling end(int level), if nothing is
-         * covered
-         * */
-        RangeIterPair getCoveredRanges(const int level, const int lower, const int upper){
-            bool s = true;
-            RangeIter a = views[level].end(), b = a;
-            ForAllRange(views[level], it){
-                if(s){
-                    if(lower < it->first && it->second < upper){
-                        a = it;
-                        b = a;
-                        s = false;
-                    }
-                }else{
-                    if(lower < it->first && it->second < upper){
-                        b = it;
-                    }else{
-                        break;
-                    }
+        std::vector<Range>& get(const int level){
+            return views[level];
+        }
+        std::vector<Range> get(const int level, RangeFilter rf){
+            std::vector<Range> ret;
+            for(auto& it: views[level]){
+                if(rf(it)){
+                    ret.push_back(it);
                 }
             }
-            b = (b == views[level].end())? views[level].end(): b + 1;
-            return std::make_pair(a, b);
+            return ret;
         }
-        RangeIterPair getCoveredRanges(const int level, const Range& range){
-            return getCoveredRanges(level, range.first, range.second);
+        std::vector<Range> get(RangeFilter rf, std::vector<Range>& context){
+            std::vector<Range> ret;
+            for(auto& it: context){
+                if(rf(it)){
+                    ret.push_back(it);
+                }
+            }
+            return ret;
         }
-        bool isNullRangeIter(RangeIterPair& pair){
-            return pair.first == pair.second;
+        Range getOne(const int level, RangeFilter rf){
+            for(auto& it: views[level]){
+                if(rf(it)){
+                    return it;
+                }
+            }
+
+            return NULL_RANGE;
+        }
+
+        Range getOne(RangeFilter rf, std::vector<Range>& context){
+            for(auto& it: context){
+                if(rf(it)){
+                    return it;
+                }
+            }
+
+            return NULL_RANGE;
+        }
+
+        /*
+         * Return a vector of ranges which are the first and the end of elements that is
+         * covered in their level
+         * */
+        std::vector<Range> getCoverRanges(const int level, const int lower, const int upper){
+            return getCoverRanges(level, Range(lower, upper));
+        }
+        std::vector<Range> getCoverRanges(const int level, const Range& range){
+            return get(level, [range](Range& r){ return isCover(range, r); });
         }
 
     private:
-        std::vector<Range> views[MCS_LEVEL];
+        std::vector<Range> views[MCS_LEVEL + 1];
 
 };
-
-/*
- * Return true if a is overlapped with b
- * */
-bool isOverlapped(const Range&, const Range&);
-
-/*
- * Return true if a covers b
- * */
-bool isCovered(const Range&, const Range&);
-
-/*
- * Expand the range, boundary-safe
- * */
-void expandRange(Range&, int);
-Range expandRangeDup(const Range&, int);
-
-#endif  // MAIN_HEADER
+#endif  // VMAG_DS_HEADER

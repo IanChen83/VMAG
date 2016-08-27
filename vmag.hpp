@@ -18,6 +18,7 @@ void printRBT(ResourceBlockTable&);
 void printUser(UserTable);
 void printRange(RangeIndicator&);
 void printCost(CostTable[]);
+void printCostTrace(CostTable[], int, int, int);
 
 /******************************************************************************
  *                               Parse Method                                 *
@@ -31,9 +32,10 @@ bool parseUser(const std::string);
  *****************************************************************************/
 
 void InitializationPhase();
-void NAggregation(const int, const Range&, const Range&);
+void NAggregation(const int, const Range&, const Range&, int);
 void VAggregation(const int, const Range&, const Range&, const Range&);
 void VHAggregation(const int, const Range&, const Range&);
+void Finalize();
 
 void VMAG();
 

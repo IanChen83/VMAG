@@ -24,6 +24,7 @@ int main(int argc, char* argv[]){
     VMAG();
 
     printCost(cost);
+    printUser(user);
 
     //TODO: Output result
 
