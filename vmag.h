@@ -42,7 +42,7 @@
  *
  * 1. Load RBT table, user table, and userView table
  * 2. call VMAG function
- * 3. result (represent in (level, view) pairs) will be stored in resultLevelView
+ * 3. result (represent in (level, view) pairs) will be stored in resultViewLevel
  * 4. optionally call reset to reset intermediate data structure, but RBT table, user
  *    table and userView table won't be reset.
  */
@@ -52,7 +52,7 @@ namespace vmag {
     typedef CostBlock Cost[MCS_LEVEL + 1][MCS_VIEW][MCS_VIEW];
     typedef Level LevelTable[MCS_LEVEL + 1];
     typedef int ResourceBlockTable[MCS_LEVEL + 1][MCS_VIEW];
-    typedef std::map<int, int> LVPair;
+    typedef std::map<int, int> VLPair;
 
     class vmag {
     private:
@@ -75,7 +75,7 @@ namespace vmag {
 
         void VMAG();
 
-        LVPair getCostTrace(Cost&, int, int, int);
+        VLPair getCostTrace(Cost&, int, int, int);
         void printCostTrace(Cost&, int, int, int);
 
 
@@ -84,7 +84,7 @@ namespace vmag {
         UserTable user = {0};
         UserViewTable userView = {0};
         ResourceBlockTable RBT = {0};
-        LVPair resultLevelView;
+        VLPair resultViewLevel;
     };
 }
 

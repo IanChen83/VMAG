@@ -227,7 +227,7 @@ namespace vmag {
     }
 
     void vmag::Finalize() {
-        resultLevelView = getCostTrace(cost, MCS_LEVEL, 0, MCS_VIEW - 1);
+        resultViewLevel = getCostTrace(cost, MCS_LEVEL, 0, MCS_VIEW - 1);
     }
 
 /*
@@ -248,7 +248,7 @@ namespace vmag {
             }
         }
 
-        resultLevelView.clear();
+        resultViewLevel.clear();
     }
 
 /*

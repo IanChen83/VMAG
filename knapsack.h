@@ -23,13 +23,19 @@ namespace knapsack{
 
             void run(){
                 int* value = new int[maxCost + 1]();
-                int** table = new int*[maxCost + 1]();
+                int* table = new int[maxCost + 1];
+                for(int i = 0; i < maxCost + 1; ++i){
+                    table[i] = -1;
+                }
+
                 int temp = 0;
 
-                for(auto& i: items){
+                for(int idx = 0; idx < items.size(); ++idx){
+                    auto i = items[idx];
                     for(int j = maxCost; j - i.cost >= 0; --j){
-                        if((temp = max(value[j], value[j - i.cost] + i.value) != value[j])){
-                            table[j] = &(value[j - i.cost]);
+                        temp = std::max(value[j], value[j - i.cost] + i.value);
+                        if(temp != value[j]){
+                            table[j] = idx;
                             value[j] = temp;
                         }
                     }
@@ -41,13 +47,15 @@ namespace knapsack{
                 while(resultCost >= 1 && value[resultCost - 1] == resultValue)
                     --resultCost;
 
-                int* p = table[maxCost];
-                int* ptemp;
                 resultItems.clear();
-                while(p != NULL){
-                    ptemp = (int*)*p;
-                    resultItems.push_back(items[p - ptemp]);
-                    p = ptemp;
+
+                int c = maxCost;
+                auto p = table[c];
+                while(p != -1){
+                    auto x = items[p];
+                    resultItems.push_back(x);
+                    c -= x.cost;
+                    p = table[c];
                 }
 
                 delete[] value;
