@@ -84,4 +84,25 @@ namespace vmag {
         return level.end();
     }
 
+    Level Level::get_served(std::vector<int> views){
+        std::sort(views.begin(), views.end());
+        Level ret;
+        Range x = NULL_RANGE;
+        for(int v : views){
+            if(x == NULL_RANGE){
+                x.first = v;
+                x.second = v;
+            }else{
+                if(v < x.first && x.first - v <= R){
+                    x.first = v;
+                }else if(v > x.second && v - x.second >= R){
+                    x.second = v;
+                }else{
+                    ret.addRange(x);
+                    x = NULL_RANGE;
+                }
+            }
+        }
+        return ret;
+    }
 }

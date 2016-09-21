@@ -1,15 +1,17 @@
+#include "level.h"
 #include "vmag.h"
 #include "vmagc.h"
 #include "knapsack.h"
 #include <cassert>
 #include <tuple>
+#include <algorithm>
 
 namespace vmagc{
-    int vmagc::get_pattern(int al, int ar, int bl, int br, int c){
+    int vmagc::get_pattern(int al, int ar, int bl, int br, int c, int loc){
         int lpattern, rpattern, y;
-        y = (c == -1) ? PATTERN_UNDER : PATTERN_NONE;
+        y = (c == -1) ? PATTERN_NONE : PATTERN_UNDER;
 
-        lpattern = (al != -1 && c - al <= R) ? PATTERN_INNER : PATTERN_NONE;
+        lpattern = (al != -1 && loc - al <= R) ? PATTERN_INNER : PATTERN_NONE;
         if(bl != -1){
             if(al == bl){
                 lpattern = PATTERN_UNDER;
@@ -17,7 +19,7 @@ namespace vmagc{
                 lpattern = PATTERN_NONE;
             }
         }
-        rpattern = (ar != -1 && ar - c <= R) ? PATTERN_INNER : PATTERN_NONE;
+        rpattern = (ar != -1 && ar - loc <= R) ? PATTERN_INNER : PATTERN_NONE;
         if(br != -1){
             if(ar == br){
                 rpattern = PATTERN_UNDER;
@@ -50,7 +52,7 @@ namespace vmagc{
             if(x.second > i.second && x.second < br.second) br = x;
         }
 
-        int code = get_pattern(al.second, ar.second, bl.second, br.second, y.second);
+        int code = get_pattern(al.second, ar.second, bl.second, br.second, y.second, i.second);
 
         int cost = b.RBT[i.second][i.first];
         int value = 0;
@@ -112,10 +114,10 @@ namespace vmagc{
             default:
                 assert(false);
         }
-        return kitem(cost, value);
+        return kitem(cost, value, i);
     }
 
-    void vmagc::dispatch(vmag::vmag& a, vmag::vmag& b){
+    std::vector<kitem> vmagc::dispatch(vmag::vmag& a, vmag::vmag& b){
         vmag::UserViewTable uv = {0};
 
         knapsack::knapsack<kitem> k;
@@ -127,5 +129,77 @@ namespace vmagc{
         }
 
         k.run();
+
+        return k.resultItems;
+    }
+
+    int vmagc::one_round(){
+        std::vector< std::pair<int, int> > carrier_rank;
+
+        for(int i = 0; i < carriers.size(); ++i){
+            if(result.find(i) == result.end()){
+                carriers[i].VMAG();
+                carrier_rank.push_back(std::make_pair(i, carriers[i].cost[MCS_LEVEL][0][MCS_VIEW - 1].cost));
+            }
+        }
+
+        std::sort(carrier_rank.begin(), carrier_rank.end(),
+                [](std::pair<int, int> a, std::pair<int, int> b){
+                return a.second < b.second;
+                });
+
+        // Decide what views to dispatch
+        const int transfer_from = carrier_rank[0].second;
+        const int transfer_to = carrier_rank[carrier_rank.size() - 1].second;
+        std::vector<kitem> transfer = dispatch(carriers[transfer_from], carriers[transfer_to]);
+
+        // Calculate served ranges
+        std::vector<int> transfer_view;
+        vmag::VLPair one_round_result;
+        std::transform(transfer.begin(), transfer.end(), transfer_view.begin(), [](const kitem& k){ return k.view.first; });
+        for(auto& v : transfer){
+            one_round_result[v.view.second] = v.view.first;
+        }
+
+        vmag::Level served = vmag::Level::get_served(transfer_view);
+        result[transfer_to] = one_round_result;
+
+        // Clear users in served ranges
+        for(int c = 0; c < carriers.size(); ++c){
+            if(result.find(c) != result.end()) continue;
+            for(auto& x : served){
+                for(int i = x.first; i <= x.second; ++i){
+                    for(int j = 0; j < MCS_LEVEL; ++j){
+                        carriers[c].user[j][i] = 0;
+                    }
+                    carriers[c].userView[i] = 0;
+                }
+            }
+            carriers[c].VMAG();
+        }
+
+        // If transfer succeed, return the filled carrier's number
+        carriers[transfer_to].VMAG();
+        if(carriers[transfer_to].cost[MCS_LEVEL][0][MCS_VIEW - 1].cost > VMAGC_LIMIT){
+            return -1;
+        }else{
+            return carrier_rank[0].first;
+        }
+    }
+
+    void vmagc::VMAGC(){
+        result.clear();
+        for(; result.size() != carriers.size() - 1;){
+            int ret = one_round();
+            if(ret == -1){
+                // Cannot be achieved;
+                return;
+            }
+        }
+        for(int i = 0; i < carriers.size(); ++i){
+            if(result.find(i) == result.end()){
+                result[i] = carriers[i].resultViewLevel;
+            }
+        }
     }
 }

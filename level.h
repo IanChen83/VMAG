@@ -46,6 +46,7 @@ namespace vmag {
 
         std::vector<Range> level;
 
+        static Level get_served(std::vector<int>);
     };
 }
 
