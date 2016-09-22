@@ -13,4 +13,9 @@ namespace vmag{
     bool parseUser(const std::string, UserTable&, UserViewTable&);
 }
 
+namespace vmagc{
+    bool parseRBT(const std::string);
+    bool parseUser(const std::string);
+}
+
 #endif //VMAG_UTIL_H

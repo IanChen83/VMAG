@@ -161,3 +161,25 @@ namespace vmag{
         return true;
     }
 }
+
+namespace vmagc{
+    bool parseUser(const string userPath){
+        ifstream is(userPath);
+        if(!is.is_open()){
+            printf("File IO error: %s\n", userPath.c_str());
+            return false;
+        }
+        is.close();
+        return true;
+    }
+
+    bool parseRBT(const string rbtPath){
+        ifstream is(rbtPath);
+        if(!is.is_open()){
+            printf("File IO error: %s\n", rbtPath.c_str());
+            return false;
+        }
+        is.close();
+        return true;
+    }
+}
