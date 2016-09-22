@@ -14,10 +14,6 @@ namespace vmag {
     struct Level {
         Level() = default;
 
-        Level(Level &) = default;
-
-        Level(Level &&) = default;
-
         void addRange(const int, const int);
 
         void addRange(const Range &);

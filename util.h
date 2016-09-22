@@ -2,6 +2,7 @@
 #define VMAG_UTIL_H
 
 #include "vmag.h"
+#include "vmagc.h"
 
 namespace vmag{
     void printRBT(ResourceBlockTable&);
@@ -14,8 +15,8 @@ namespace vmag{
 }
 
 namespace vmagc{
-    bool parseRBT(const std::string);
-    bool parseUser(const std::string);
+    bool parseRBT(const std::string, vmagc& vm);
+    bool parseUser(const std::string, vmagc& vm);
 }
 
 #endif //VMAG_UTIL_H

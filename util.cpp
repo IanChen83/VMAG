@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cassert>
 #include "vmag.h"
+#include "vmagc.h"
 
 using namespace std;
 
@@ -18,6 +19,7 @@ namespace vmag{
     }
 
     void printUser(UserTable& u){
+        cout << "--------------------------------------------------------------" << endl;
         cout << setw(2) << 'x';
         ForEachView(i){
             cout << setw(3) << i;
@@ -163,23 +165,76 @@ namespace vmag{
 }
 
 namespace vmagc{
-    bool parseUser(const string userPath){
+    bool parseUser(const string userPath, vmagc& vm){
+        assert(vm.carriers.size() == CARRIER_NUM);
         ifstream is(userPath);
         if(!is.is_open()){
             printf("File IO error: %s\n", userPath.c_str());
             return false;
         }
+        string line;
+        int level[CARRIER_NUM], view;
+        getline(is, line);  // Drop the first line
+        while(getline(is, line)){
+            stringstream ss;
+            ss << line;
+            ss >> view;
+            for(int i = 0; i < CARRIER_NUM; ++i)
+                ss >> level[i];
+            if(ss.fail()){
+                printf("Error: Parsing range line failed: %s\n", line.c_str());
+            }else{
+                assert(0 <= view && view < MCS_VIEW);
+                for(int i = 0; i < CARRIER_NUM; ++i){
+                    if(level[i] == -1) continue;
+
+                    assert(0 <= level[i] && level[i] < MCS_LEVEL);
+                    vm.carriers[i].user[level[i]][view] = 1;
+                    ++vm.carriers[i].userView[view];
+                }
+            }
+        }
+
         is.close();
         return true;
     }
 
-    bool parseRBT(const string rbtPath){
+    bool parseRBT(const string rbtPath, vmagc& vm){
         ifstream is(rbtPath);
         if(!is.is_open()){
             printf("File IO error: %s\n", rbtPath.c_str());
             return false;
         }
+        int level = 0, view = 0, count = 0, num = 0;
+        string line;
+        while(getline(is, line)){
+            num = stoi(line);
+            for(auto& c : vm.carriers){
+                c.RBT[level][view] = num;
+            }
+            ++view;
+            ++count;
+            if(view == MCS_VIEW){
+                view = 0;
+                ++level;
+            }
+            if(level == MCS_LEVEL){
+                // printf("Warning: File not ends but RBT all filled\n");
+                break;
+            }
+        }
+
+        if(count != MCS_LEVEL * MCS_VIEW){
+            printf("Warning: Expect %d lines, only %d lines read\n",
+                   MCS_LEVEL * MCS_VIEW, count);
+        }
+
         is.close();
+        for(auto& c : vm.carriers){
+            ForEachView(i){
+                c.RBT[MCS_LEVEL][i] = 0;
+            }
+        }
         return true;
     }
 }

@@ -52,7 +52,7 @@ namespace vmag {
     typedef CostBlock Cost[MCS_LEVEL + 1][MCS_VIEW][MCS_VIEW];
     typedef Level LevelTable[MCS_LEVEL + 1];
     typedef int ResourceBlockTable[MCS_LEVEL + 1][MCS_VIEW];
-    typedef std::map<int, int> VLPair;
+    typedef std::map<int, int> VLMap;
 
     class vmag {
     private:
@@ -61,6 +61,8 @@ namespace vmag {
         int QOE(const int, const int);
 
     public:
+        vmag() = default;
+
         void InitializationPhase();
 
         void NAggregation(const int, const Range &, const Range &, int);
@@ -75,7 +77,7 @@ namespace vmag {
 
         void VMAG();
 
-        VLPair getCostTrace(Cost&, int, int, int);
+        void getCostTrace(VLMap&, Cost&, int, int, int);
         void printCostTrace(Cost&, int, int, int);
 
 
@@ -84,7 +86,7 @@ namespace vmag {
         UserTable user = {0};
         UserViewTable userView = {0};
         ResourceBlockTable RBT = {0};
-        VLPair resultViewLevel;
+        VLMap resultViewLevel;
     };
 }
 

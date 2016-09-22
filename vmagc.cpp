@@ -1,4 +1,5 @@
 #include "level.h"
+#include "util.h"
 #include "vmag.h"
 #include "vmagc.h"
 #include "knapsack.h"
@@ -7,6 +8,11 @@
 #include <algorithm>
 
 namespace vmagc{
+    vmagc::vmagc(){
+        for(int i = 0; i < CARRIER_NUM; ++i){
+            carriers[i] = vmag::vmag();
+        }
+    }
     int vmagc::get_pattern(int al, int ar, int bl, int br, int c, int loc){
         int lpattern, rpattern, y;
         y = (c == -1) ? PATTERN_NONE : PATTERN_UNDER;
@@ -136,8 +142,9 @@ namespace vmagc{
     int vmagc::one_round(){
         std::vector< std::pair<int, int> > carrier_rank;
 
-        for(int i = 0; i < carriers.size(); ++i){
+        for(int i = 0; i < CARRIER_NUM; ++i){
             if(result.find(i) == result.end()){
+                carriers[i].reset();
                 carriers[i].VMAG();
                 carrier_rank.push_back(std::make_pair(i, carriers[i].cost[MCS_LEVEL][0][MCS_VIEW - 1].cost));
             }
@@ -149,13 +156,13 @@ namespace vmagc{
                 });
 
         // Decide what views to dispatch
-        const int transfer_from = carrier_rank[0].second;
-        const int transfer_to = carrier_rank[carrier_rank.size() - 1].second;
+        const int transfer_from = carrier_rank[0].first;
+        const int transfer_to = carrier_rank[carrier_rank.size() - 1].first;
         std::vector<kitem> transfer = dispatch(carriers[transfer_from], carriers[transfer_to]);
 
         // Calculate served ranges
         std::vector<int> transfer_view;
-        vmag::VLPair one_round_result;
+        vmag::VLMap one_round_result;
         std::transform(transfer.begin(), transfer.end(), transfer_view.begin(), [](const kitem& k){ return k.view.first; });
         for(auto& v : transfer){
             one_round_result[v.view.second] = v.view.first;
@@ -165,7 +172,7 @@ namespace vmagc{
         result[transfer_to] = one_round_result;
 
         // Clear users in served ranges
-        for(int c = 0; c < carriers.size(); ++c){
+        for(int c = 0; c < CARRIER_NUM; ++c){
             if(result.find(c) != result.end()) continue;
             for(auto& x : served){
                 for(int i = x.first; i <= x.second; ++i){
@@ -175,10 +182,12 @@ namespace vmagc{
                     carriers[c].userView[i] = 0;
                 }
             }
+            carriers[c].reset();
             carriers[c].VMAG();
         }
 
         // If transfer succeed, return the filled carrier's number
+        carriers[transfer_to].reset();
         carriers[transfer_to].VMAG();
         if(carriers[transfer_to].cost[MCS_LEVEL][0][MCS_VIEW - 1].cost > VMAGC_LIMIT){
             return -1;
@@ -189,14 +198,14 @@ namespace vmagc{
 
     void vmagc::VMAGC(){
         result.clear();
-        for(; result.size() != carriers.size() - 1;){
+        for(; result.size() != CARRIER_NUM - 1;){
             int ret = one_round();
             if(ret == -1){
                 // Cannot be achieved;
                 return;
             }
         }
-        for(int i = 0; i < carriers.size(); ++i){
+        for(int i = 0; i < CARRIER_NUM; ++i){
             if(result.find(i) == result.end()){
                 result[i] = carriers[i].resultViewLevel;
             }

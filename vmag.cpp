@@ -1,4 +1,5 @@
 #include "range.h"
+#include "util.h"
 #include "level.h"
 #include "cost.h"
 #include "vmag.h"
@@ -227,7 +228,9 @@ namespace vmag {
     }
 
     void vmag::Finalize() {
-        resultViewLevel = getCostTrace(cost, MCS_LEVEL, 0, MCS_VIEW - 1);
+        //getCostTrace(cost, MCS_LEVEL, 0, MCS_VIEW - 1);
+        printCostTrace(cost, MCS_LEVEL, 0, MCS_VIEW - 1);
+        getCostTrace(resultViewLevel, cost, MCS_LEVEL, 0, MCS_VIEW - 1);
     }
 
 /*
@@ -255,7 +258,7 @@ namespace vmag {
  * VMAG Algorithm
  * */
     void vmag::VMAG() {
-
+        // std::cout << "Run VMAG" << endl;
         InitializationPhase();
 
         for (auto &it: LT[0]) {
@@ -302,11 +305,10 @@ namespace vmag {
         Finalize();
     }
 
-    std::map<int, int> vmag::getCostTrace(Cost &ct, int level, int from, int to) {
+    void vmag::getCostTrace(VLMap& ret, Cost &ct, int level, int from, int to) {
         typedef std::tuple<int, int, int> LFT;
         const int L = 0, F = 1, T = 2;
-
-        std::map<int, int> ret;
+        printCost(ct);
         std::stack<LFT> s;
         CostBlock *c;
         int _l, _f, _t;
@@ -317,13 +319,13 @@ namespace vmag {
             c = &ct[_l][_f][_t];
 
             if (_f == _t) {
-                if (ret.count(_t) == 0) {
+                if (ret.find(_t) == ret.end()) {
                     ret[_t] = _l;
                 }
                 s.pop();
             } else if (c->method == 'N') {
                 std::get<T>(s.top()) = c->prev;
-                if (ret.count(_t) == 0) {
+                if (ret.find(_t) == ret.end()) {
                     ret[_t] = _l;
                 }
                 continue;
@@ -338,13 +340,12 @@ namespace vmag {
         if (ret.count(_t) == 0) {
             ret[_t] = _l;
         }
-
-        return ret;
     }
 
 
     void vmag::printCostTrace(Cost &ct, int level, int from, int to) {
-        auto trace = getCostTrace(ct, level, from, to);
+        VLMap trace;
+        getCostTrace(trace, ct, level, from, to);
         for (auto t: trace) {
             if (t.second == MCS_LEVEL) continue;
             cout << '(' << t.first << ',' << t.second << ')' << ' ';

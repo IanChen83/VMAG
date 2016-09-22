@@ -6,11 +6,11 @@
 
 namespace vmag {
     struct CostBlock {
-        CostBlock() : cost(INT_MAX), prev(-1), method('\0') {}
-
-        CostBlock(CostBlock &) = default;
-
-        CostBlock(CostBlock &&) = default;
+        CostBlock() {
+            cost = INT_MAX;
+            prev = -1;
+            method = '\0';
+        }
 
         int cost;
         int prev;

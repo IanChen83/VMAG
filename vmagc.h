@@ -1,5 +1,8 @@
+#ifndef VMAGC_HEADER
+#define VMAGC_HEADER
 #include "knapsack.h"
 #include "vmag.h"
+#include <array>
 #include <vector>
 
 namespace vmagc{
@@ -26,9 +29,12 @@ namespace vmagc{
 
     class vmagc{
         public:
-            std::vector<vmag::vmag> carriers;
+            std::array<vmag::vmag, CARRIER_NUM> carriers;
 
             kitem set_kitem(vmag::vmag&, vmag::vmag&, VLPair);
+
+            // Constructor
+            vmagc();
 
             int one_round();
 
@@ -44,7 +50,7 @@ namespace vmagc{
              */
             std::vector<kitem> dispatch(vmag::vmag&, vmag::vmag&);
 
-            std::map<int, vmag::VLPair > result;
+            std::map<int, vmag::VLMap > result;
         private:
             const int PATTERN_NONE = 0;
             const int PATTERN_UNDER = 1;
@@ -56,3 +62,5 @@ namespace vmagc{
                 {{13, 14}, {15, 16}, {17, 18}}};
     };
 }
+
+#endif  // VMAGC_HEADER

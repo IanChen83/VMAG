@@ -1,4 +1,5 @@
 #include "util.h"
+#include "vmagc.h"
 #include <iostream>
 #include <cstdlib>
 #include <climits>
@@ -14,4 +15,10 @@ int main(int argc, char *argv[]) {
     char* resolved_path = new char[PATH_MAX];
     realpath(argv[1], resolved_path);
 
+    vmagc::vmagc vm;
+
+    vmagc::parseUser(string(resolved_path) + "/user.txt" ,vm);
+    vmagc::parseRBT(string(resolved_path) + "/slot.txt" ,vm);
+
+    vm.VMAGC();
 }
