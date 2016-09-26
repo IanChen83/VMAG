@@ -40,3 +40,5 @@ main
 tags
 *.swp
 .vscode
+
+build/
