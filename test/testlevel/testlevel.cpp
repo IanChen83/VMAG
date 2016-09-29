@@ -1,4 +1,6 @@
 #include "testlevel.h"
+#include <vector>
+#include <iostream>
 
 using namespace vmag;
 
@@ -18,4 +20,36 @@ TEST_F(LevelTest, CopyCostructorTest){
     level.addRange(1, 2);
     auto x(level);
     ASSERT_TRUE(x.isInRange(1));
+}
+
+TEST_F(LevelTest, GetServedTest){
+    std::vector<int> views;
+
+    views.push_back(1);
+    views.push_back(4);
+
+    level = Level::get_served(views);
+
+    ASSERT_EQ(level.size(), 1);
+    EXPECT_EQ(*(level.begin()), Range(1, 4));
+
+    views.push_back(8);
+    views.push_back(10);
+    views.push_back(11);
+    views.push_back(12);
+
+    level = Level::get_served(views);
+
+    ASSERT_EQ(level.size(), 2);
+    EXPECT_EQ(*(level.begin() + 1), Range(8, 12));
+}
+
+TEST_F(LevelTest, ResetTest){
+    vmag::Level level2 = vmag::Level();
+
+    level.addRange(1, 4);
+    level.addRange(8, 12);
+    level.reset();
+
+    EXPECT_TRUE(level.level == level2.level);
 }

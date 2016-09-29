@@ -2,6 +2,7 @@
 #include "level.h"
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 namespace vmag {
 
@@ -95,13 +96,17 @@ namespace vmag {
             }else{
                 if(v < x.first && x.first - v <= R){
                     x.first = v;
-                }else if(v > x.second && v - x.second >= R){
+                }else if(v > x.second && v - x.second <= R){
                     x.second = v;
                 }else{
                     ret.addRange(x);
-                    x = NULL_RANGE;
+                    x.first = v;
+                    x.second = v;
                 }
             }
+        }
+        if(x != NULL_RANGE){
+            ret.addRange(x);
         }
         return ret;
     }

@@ -7,5 +7,4 @@ target_link_libraries(testlevel
     libgtest
     )
 
-install(TARGETS testlevel DESTINATION bin)
 add_test(level_test testlevel)

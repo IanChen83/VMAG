@@ -39,3 +39,4 @@ include_directories("${source_dir}/googletest/include"
 include_directories(../src)
 
 add_subdirectory(testlevel)
+add_subdirectory(testknapsack)

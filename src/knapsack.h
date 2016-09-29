@@ -3,64 +3,87 @@
 
 #include <vector>
 #include <cassert>
+#include <algorithm>
+#include <iostream>
+
+void print(int** value, int i, int j){
+    if(value[i][j] != 0)
+        std::cout << i << '\t' << value[i][j] << std::endl;
+}
+
+void stub(){
+    return;
+}
 
 namespace knapsack{
-    struct kitem{
-        int cost;
-        int value;
-    };
+    template <class T>
+        struct kitem{
+            int cost;
+            int value;
+            T data;
 
-    template <typename item>
+            bool operator< (const kitem& rhs){ return this->value < rhs.value; }
+            bool operator> (const kitem& rhs){ return rhs < *this; }
+            bool operator<=(const kitem& rhs){ return !(*this > rhs); }
+            bool operator>=(const kitem& rhs){ return !(*this < rhs); }
+        };
+
+
+    template <class T>
         struct knapsack{
-            static_assert(std::is_base_of<kitem, item>::value, "item must be derived from kitem");
-
             int maxCost;
-            std::vector<item> items;
+            std::vector< kitem<T> > items;
 
             int resultValue;
             int resultCost;
-            std::vector<item> resultItems;
+            std::vector< kitem<T> > resultItems;
 
             void run(){
+                int size = items.size();
                 int* value = new int[maxCost + 1]();
-                int* table = new int[maxCost + 1];
-                for(int i = 0; i < maxCost + 1; ++i){
-                    table[i] = -1;
-                }
+                int* record = new int[maxCost + 1]();
+                std::sort(items.begin(), items.end());
+                std::reverse(items.begin(), items.end());
 
-                int temp = 0;
-
-                for(int idx = 0; idx < items.size(); ++idx){
-                    auto i = items[idx];
-                    for(int j = maxCost; j - i.cost >= 0; --j){
-                        temp = std::max(value[j], value[j - i.cost] + i.value);
-                        if(temp != value[j]){
-                            table[j] = idx;
+                int temp;
+                for(int i = 0; i < size; ++i){
+                    for(int j = maxCost; j - items[i].cost >= 0; --j){
+                        if((temp = std::max(value[j], value[j - items[i].cost] + items[i].value)) != value[j]){
                             value[j] = temp;
+                            record[j] = i + 1;
                         }
                     }
                 }
 
-                resultValue = value[maxCost];
 
+                resultValue = value[maxCost];
                 resultCost = maxCost;
-                while(resultCost >= 1 && value[resultCost - 1] == resultValue)
+                while(resultCost > 0 && value[resultCost] == value[resultCost - 1])
                     --resultCost;
 
-                resultItems.clear();
-
-                int c = maxCost;
-                auto p = table[c];
-                while(p != -1){
-                    auto x = items[p];
-                    resultItems.push_back(x);
-                    c -= x.cost;
-                    p = table[c];
+                int cost = resultCost;
+                while(record[cost] != 0){
+                    for(int i = 0; i < size; ++i){
+                        if(items[i].cost == items[record[cost] - 1].cost){
+                            bool isDup = false;
+                            for(auto& x : resultItems){
+                                if(x.value == items[i].value){
+                                    isDup = true;
+                                    break;
+                                }
+                            }
+                            if(!isDup){
+                                resultItems.push_back(items[i]);
+                                break;
+                            }
+                        }
+                    }
+                    cost -= items[record[cost]-1].cost;
                 }
 
                 delete[] value;
-                delete[] table;
-            }
+
+            };
 
             void reset(){
                 maxCost = resultValue = resultCost = 0;
