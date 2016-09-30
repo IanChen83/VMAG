@@ -18,20 +18,13 @@ namespace vmagc{
     *
     *******************************************************************/
     typedef std::pair<int, int> VLPair;
-    struct kitem : knapsack::kitem{
-        std::pair<int, int> view;
-        kitem(int _c, int _v, std::pair<int, int> _view){
-            cost = _c;
-            value = _v;
-            view = _view;
-        }
-    };
+    typedef knapsack::kitem<VLPair> VLPair_kitem;
 
     class vmagc{
         public:
             std::array<vmag::vmag, CARRIER_NUM> carriers;
 
-            kitem set_kitem(vmag::vmag&, vmag::vmag&, VLPair);
+            VLPair_kitem set_kitem(vmag::vmag&, vmag::vmag&, VLPair);
 
             // Constructor
             vmagc();
@@ -48,9 +41,9 @@ namespace vmagc{
              * Dispatch views from carrier a to carrier b using 0/1 knapsack algorithm.
              * Assume that both carriers have run VMAG algorithm.
              */
-            std::vector<kitem> dispatch(vmag::vmag&, vmag::vmag&);
+            std::vector<VLPair_kitem> dispatch(vmag::vmag&, vmag::vmag&);
 
-            std::map<int, vmag::VLMap > result;
+            std::map<int, vmag::VLMap> result;
         private:
             const int PATTERN_NONE = 0;
             const int PATTERN_UNDER = 1;

@@ -3,8 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
-#include "vmag.h"
-#include "vmagc.h"
+#include "util.h"
 
 using namespace std;
 
@@ -238,3 +237,4 @@ namespace vmagc{
         return true;
     }
 }
+

@@ -1,6 +1,7 @@
 #ifndef VMAG_UTIL_H
 #define VMAG_UTIL_H
 
+#include <string>
 #include "vmag.h"
 #include "vmagc.h"
 

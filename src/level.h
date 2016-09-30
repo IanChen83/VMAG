@@ -45,7 +45,10 @@ namespace vmag {
         std::vector<Range> level;
 
         static Level get_served(std::vector<int>);
+
     };
+
+    std::ostream& operator<<(std::ostream& os,const Level& level);
 }
 
 #endif //VMAG_LEVEL_H

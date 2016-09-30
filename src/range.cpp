@@ -1,14 +1,8 @@
 #include <cassert>
-#include <ostream>
 #include "range.h"
 #include "vmag.h"
 
 namespace vmag {
-    std::ostream& operator<<(std::ostream& os,const Range& range){
-        os << '[' << range.first << ':' << range.second << ']';
-        return os;
-    }
-
     Range::Range(int a, int b) : std::pair<int, int>(a, b) {}
 
     void Range::expand(int r) {
@@ -37,4 +31,8 @@ namespace vmag {
         return Range(b.first, (a.second > b.second) ? b.second : a.second);
     }
 
+    std::ostream& operator<<(std::ostream& os,const Range& range){
+        os << '[' << range.first << ':' << range.second << ']';
+        return os;
+    }
 }

@@ -2,10 +2,10 @@
 #include "level.h"
 #include <algorithm>
 #include <cassert>
+#include <ostream>
 #include <iostream>
 
 namespace vmag {
-
     void Level::addRange(const int lower, const int upper) {
         assert(lower >= 0 && lower < MCS_VIEW);
         assert(upper >= 0 && upper < MCS_VIEW);
@@ -109,5 +109,12 @@ namespace vmag {
             ret.addRange(x);
         }
         return ret;
+    }
+
+    std::ostream& operator<<(std::ostream& os,const Level& level){
+        for(auto& x : level.level){
+            os << x;
+        }
+        return os;
     }
 }

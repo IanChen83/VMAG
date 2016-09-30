@@ -1,6 +1,7 @@
 #ifndef VMAG_RANGE_H
 #define VMAG_RANGE_H
 
+#include <ostream>
 #include <utility>
 #include <vector>
 #include <functional>
@@ -43,6 +44,8 @@ namespace vmag {
      * @param b     Range b
      */
     Range getOverlapped(const Range &, const Range &);
+
+    std::ostream& operator<<(std::ostream& os,const Range& range);
 }
 
 #define NULL_RANGE Range(-1, -1)

@@ -40,3 +40,4 @@ include_directories(../src)
 
 add_subdirectory(testlevel)
 add_subdirectory(testknapsack)
+add_subdirectory(testvmagc)

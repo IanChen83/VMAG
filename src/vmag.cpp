@@ -258,7 +258,7 @@ namespace vmag {
  * VMAG Algorithm
  * */
     void vmag::VMAG() {
-        // std::cout << "Run VMAG" << endl;
+        reset();
         InitializationPhase();
 
         for (auto &it: LT[0]) {
@@ -338,6 +338,15 @@ namespace vmag {
         }
         if (ret.count(_t) == 0) {
             ret[_t] = _l;
+        }
+
+        // GG workaround
+        for(auto it = ret.begin(); it != ret.end();){
+            if(RBT[it->second][it->first] == 0){
+                it = ret.erase(it);
+            }else{
+                ++it;
+            }
         }
     }
 
